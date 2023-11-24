@@ -28,4 +28,4 @@ onisite/plugins/*
 .env
 
 # Ignore Traefik letsencrypt certificates
-./letsencrypt
+letsencrypt
