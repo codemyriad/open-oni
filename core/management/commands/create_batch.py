@@ -38,7 +38,7 @@ class Command(BaseCommand):
             help="Institutional code",
         )
         parser.add_argument(
-            "--version", dest="version", default="01", help="Issue version"
+            "--issue-version", dest="issue_version", default="01", help="Issue version"
         )
         parser.add_argument(
             "--lccn", dest="lccn", default="", help="Library of Congress Call Number"
@@ -66,7 +66,7 @@ class Command(BaseCommand):
         pdf_path = options["pdf_path"][0]
         batch_name = options["batch_name"]
         institutional_code = options["institutional_code"]
-        version = options["version"]
+        version = options["issue_version"]
         lccn = options["lccn"]
         issue_date = options["issue_date"]
         output_path = options["output_path"]
