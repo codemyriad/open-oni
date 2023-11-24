@@ -26,3 +26,6 @@ onisite/plugins/*
 # Ignore Docker overrides
 /docker-compose.override.yml
 .env
+
+# Ignore Traefik letsencrypt certificates
+./letsencrypt

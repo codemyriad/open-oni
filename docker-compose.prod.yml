@@ -1,0 +1,36 @@
+version: '2.1'
+
+services:
+  traefik:
+    image: traefik:v2.5
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=info@cmzx.it"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+    labels:
+      - "traefik.enable=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+
+  web:
+    ports: []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openoni.rule=Host(`oni.cmzx.it`)"
+      - "traefik.http.routers.openoni.entrypoints=web"
+      - "traefik.http.routers.openoni.entrypoints=websecure"
+      - "traefik.http.routers.openoni.tls.certresolver=myresolver"

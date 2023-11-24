@@ -35,8 +35,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./:/opt/openoni:z
-    ports:
-      - ${HTTPPORT:-80}:80
     depends_on:
       - rdbms
     links:
