@@ -15,3 +15,5 @@ rfc3339
 setuptools
 simplejson
 worldcat
+pdf2image
+PyMuPDF
