@@ -1,15 +1,10 @@
 import os
-import fitz
-import shutil
 from xml.dom.minidom import parseString
+from xml.etree.ElementTree import Element, SubElement, tostring
 
-from optparse import make_option
-
-from django.core.management.base import BaseCommand
-from django.core.management.base import CommandError
-
+import fitz
+from django.core.management.base import BaseCommand, CommandError
 from pdf2image import convert_from_path
-from xml.etree.ElementTree import Element, SubElement, ElementTree, tostring, QName
 
 
 class Command(BaseCommand):
@@ -18,7 +13,13 @@ class Command(BaseCommand):
 
     Example invocation:
 
-        python manage.py import_pdf_to_batch --batch-name=<batch_name> --institutional-code=<institutional_code> --version=<version> --lccn=<lccn> --issue-date=<issue_date> --output-path=<output_path> <pdf_path>
+        python manage.py import_pdf_to_batch \
+            --batch-name=<batch_name> \
+            --institutional-code=<institutional_code> \
+            --version=<version> \
+            --lccn=<lccn> \
+            --issue-date=<issue_date> \
+            --output-path=<output_path> <pdf_path>
     """
 
     help = "Generate an Open ONI batch out of a PDF"
@@ -69,7 +70,9 @@ class Command(BaseCommand):
         lccn = options["lccn"]
         issue_date = options["issue_date"]
         output_path = options["output_path"]
-        reel_number = "01"  # We don't really need this for now
+
+        issue_code = f"{issue_date}01"
+        reel_number = "01"
 
         self.stdout.write(f"PDF Path: {pdf_path}")
         self.stdout.write(f"Batch Name: {batch_name}")
@@ -83,7 +86,7 @@ class Command(BaseCommand):
             raise CommandError(f"Error: PDF file not found at path: {pdf_path}\n")
 
         self.create_open_oni_batch(
-            pdf_file_path,
+            pdf_path,
             output_path,
             batch_name,
             institutional_code,
@@ -94,6 +97,7 @@ class Command(BaseCommand):
         )
 
     def create_open_oni_batch(
+        self,
         pdf_file_path,
         output_path,
         batch_name,
@@ -217,17 +221,12 @@ class Command(BaseCommand):
             mods_physical_description = SubElement(
                 mods_related, "mods:physicalDescription"
             )
-            mods_form = SubElement(
-                mods_physical_description, "mods:form", type="microfilm"
-            )
+            SubElement(mods_physical_description, "mods:form", type="microfilm")
 
             mods_identifier = SubElement(
                 mods_related, "mods:identifier", type="reel number"
             )
             mods_identifier.text = reel_number
-            # mods_identifier = SubElement(mods_related, "mods:identifier", type="reel sequence number")
-            # mods_identifier.text = ??
-
             mods_location = SubElement(mods_related, "mods:location")
             mods_physical_location = SubElement(
                 mods_location,
@@ -280,7 +279,7 @@ class Command(BaseCommand):
             file_tag = SubElement(
                 file_group,
                 "file",
-                ADMID=f"premisotherDerivativeFile",
+                ADMID="premisotherDerivativeFile",
                 ID=file_id,
                 USE="derivative",
             )
@@ -293,7 +292,7 @@ class Command(BaseCommand):
             )
             file_loc.set("xlink:href", f"./{os.path.basename(pdf_page_file_path)}")
 
-            file_struct = SubElement(page_div, "fptr", FILEID=file_id)
+            SubElement(page_div, "fptr", FILEID=file_id)
 
             if not os.path.exists(jp2_image_file_path):
                 image = images[page.number]
@@ -302,7 +301,7 @@ class Command(BaseCommand):
             file_id = f"serviceFile{page.number + 1}"
             file_group = SubElement(file_sec, "fileGrp")
             file_tag = SubElement(
-                file_group, "file", ADMID=f"mixserviceFile", ID=file_id, USE="service"
+                file_group, "file", ADMID="mixserviceFile", ID=file_id, USE="service"
             )
             file_loc = SubElement(
                 file_tag,
@@ -313,7 +312,7 @@ class Command(BaseCommand):
             )
             file_loc.set("xlink:href", f"./{os.path.basename(jp2_image_file_path)}")
 
-            file_struct = SubElement(page_div, "fptr", FILEID=file_id)
+            SubElement(page_div, "fptr", FILEID=file_id)
 
             if not os.path.exists(tif_image_file_path):
                 image.save(tif_image_file_path, "TIFF")
@@ -321,7 +320,7 @@ class Command(BaseCommand):
             file_id = f"masterFile{page.number + 1}"
             file_group = SubElement(file_sec, "fileGrp")
             file_tag = SubElement(
-                file_group, "file", ADMID=f"mixmasterFile", ID=file_id, USE="master"
+                file_group, "file", ADMID="mixmasterFile", ID=file_id, USE="master"
             )
             file_loc = SubElement(
                 file_tag,
@@ -332,7 +331,7 @@ class Command(BaseCommand):
             )
             file_loc.set("xlink:href", f"./{os.path.basename(tif_image_file_path)}")
 
-            file_struct = SubElement(page_div, "fptr", FILEID=file_id)
+            SubElement(page_div, "fptr", FILEID=file_id)
 
             # Create an ALTO XML structure
             alto_xml = self.generate_alto_xml(page, page_width, page_height)
@@ -346,7 +345,7 @@ class Command(BaseCommand):
             file_id = f"ocrFile{page.number + 1}"
             file_group = SubElement(file_sec, "fileGrp")
             file_tag = SubElement(
-                file_group, "file", ADMID=f"premisocrFile", ID=file_id, USE="ocr"
+                file_group, "file", ADMID="premisocrFile", ID=file_id, USE="ocr"
             )
             file_loc = SubElement(
                 file_tag,
@@ -357,7 +356,7 @@ class Command(BaseCommand):
             )
             file_loc.set("xlink:href", f"./{os.path.basename(alto_file_path)}")
 
-            file_struct = SubElement(page_div, "fptr", FILEID=file_id)
+            SubElement(page_div, "fptr", FILEID=file_id)
 
         # Save the METS XML
         mets_file_path = os.path.join(issue_directory, f"{issue_code}.xml")
@@ -373,10 +372,10 @@ class Command(BaseCommand):
 
         # Save the batch XML
         batch_file_path = os.path.join(
-            output_path, batch_folder_name, "data", f"batch.xml"
+            output_path, batch_folder_name, "data", "batch.xml"
         )
         batch_validation_file_path = os.path.join(
-            output_path, batch_folder_name, "data", f"batch_1.xml"
+            output_path, batch_folder_name, "data", "batch_1.xml"
         )
         batch_xml = parseString(
             tostring(batch, encoding="utf-8").decode()
@@ -388,11 +387,11 @@ class Command(BaseCommand):
 
         print(f"Open-ONI batch folder created at: {issue_directory}")
 
-    def format_number_with_padding(number):
+    def format_number_with_padding(self, number):
         return f"{number:04d}"
 
     def create_open_oni_batch_folder_structure(
-        root_folder, batch_folder_name, lccn, reel_number, issue_code
+        self, root_folder, batch_folder_name, lccn, reel_number, issue_code
     ):
         # Create the root directory if it doesn't exist
         issue_folder_path = os.path.join(
@@ -401,7 +400,7 @@ class Command(BaseCommand):
         os.makedirs(issue_folder_path, exist_ok=True)
         return issue_folder_path
 
-    def get_element_coordinates(raw_coordinates):
+    def get_element_coordinates(self, raw_coordinates):
         return dict(
             HPOS=str(raw_coordinates[0]),
             VPOS=str(raw_coordinates[1]),
@@ -409,7 +408,7 @@ class Command(BaseCommand):
             HEIGHT=str(raw_coordinates[3] - raw_coordinates[1]),
         )
 
-    def generate_alto_xml(pdf_page, page_width, page_height):
+    def generate_alto_xml(self, pdf_page, page_width, page_height):
         # Create METS-ALTO XML for each page
         alto = Element("alto", xmlns="http://www.loc.gov/standards/alto/ns-v4#")
         layout = SubElement(alto, "Layout")
@@ -442,7 +441,7 @@ class Command(BaseCommand):
                             # We hit a whitespace
                             if word:
                                 # Let's write the word down
-                                text_word = SubElement(
+                                SubElement(
                                     text_line,
                                     "String",
                                     CONTENT="".join([char["c"] for char in word]),
@@ -454,14 +453,14 @@ class Command(BaseCommand):
                                 )
                                 # Clear the word list, as we are going for the next word
                                 word = []
-                            whitespace = SubElement(
+                            SubElement(
                                 text_line,
                                 "SP",
                                 **self.get_element_coordinates(char["bbox"]),
                             )
                         elif len(chars) == 1:
                             # This line have just one charachter, we just write it down
-                            text_word = SubElement(
+                            SubElement(
                                 text_line,
                                 "String",
                                 CONTENT=char["c"],
@@ -478,7 +477,7 @@ class Command(BaseCommand):
                             if word:
                                 word.append(char)
                                 # let's write the word down, without a whitespace
-                                text_word = SubElement(
+                                SubElement(
                                     text_line,
                                     "String",
                                     CONTENT="".join([char["c"] for char in word]),
@@ -491,13 +490,13 @@ class Command(BaseCommand):
                                 # Reset the word
                                 word = []
                             else:
-                                # We don't have a word. This means the end of the line is a single character
-                                # preceeded by a whitespace
-                                text_word = SubElement(
+                                # We don't have a word. This means the end of the line
+                                # is a single character preceeded by a whitespace
+                                SubElement(
                                     text_line,
                                     "String",
                                     CONTENT=char["c"],
-                                    **self.self.get_element_coordinates(
+                                    **self.get_element_coordinates(
                                         fitz.recover_span_quad(
                                             line["dir"], span, [char]
                                         ).rect
