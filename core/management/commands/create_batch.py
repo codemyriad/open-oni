@@ -56,8 +56,7 @@ class Command(BaseCommand):
             help="Output path for the batch",
         )
 
-    def handle(self, batch_path, *args, **options):
-        # Check if required options are provided
+    def handle(self, pdf_path, *args, **options):
         required_options = ["batch_name", "institutional_code", "issue_date"]
         for option in required_options:
             if not options[option]:
@@ -80,10 +79,8 @@ class Command(BaseCommand):
         self.stdout.write(f"Issue Date: {issue_date}")
         self.stdout.write(f"Output Path: {output_path}")
 
-        # Check if the PDF file exists
         if not os.path.isfile(pdf_path):
-            self.stderr.write(f"Error: PDF file not found at path: {pdf_path}\n")
-            return
+            raise CommandError(f"Error: PDF file not found at path: {pdf_path}\n")
 
         self.create_open_oni_batch(
             pdf_file_path,
