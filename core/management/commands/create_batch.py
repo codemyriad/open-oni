@@ -63,7 +63,7 @@ class Command(BaseCommand):
             if not options[option]:
                 raise CommandError(f"Error: Required option '{option}' is missing.")
 
-        pdf_path = options["pdf_path"][0]
+        pdf_path = pdf_path[0]
         batch_name = options["batch_name"]
         institutional_code = options["institutional_code"]
         version = options["issue_version"]
